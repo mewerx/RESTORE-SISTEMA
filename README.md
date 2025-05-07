@@ -1,4 +1,4 @@
-import sys
+mport sys
 import os
 import pandas as pd
 import folium
@@ -186,6 +186,9 @@ class MainWindow(QMainWindow):
             self.df_original['FECHA'] = pd.to_datetime(self.df_original['FECHA'], errors='coerce')
             self.df_original['AÑO'] = self.df_original['FECHA'].dt.year
             self.df_original = self.df_original.dropna(subset=["LATITUD", "LONGITUD", "FECHA", "COLONIA", "HORA REDONDEADA", "CLASIFICACION"])
+            # Comprobar que las fechas incluyan los meses deseados
+            print(f"Fechas mínimas y máximas en los datos cargados:{self.df_original['FECHA'].min()} - {self.df_original['FECHA'].max()}")
+            
             self.df = self.df_original.copy()
             print("Datos cargados correctamente.")
             return True
@@ -195,6 +198,20 @@ class MainWindow(QMainWindow):
         except Exception as e:
             print(f"Error al cargar los datos: {e}")
             return False
+        
+    def verificar_meses(self):
+         # Extraer los meses y años presentes en el DataFrame
+         if self.df is not None and not self.df.empty:
+             meses_anios = self.df['FECHA'].dt.to_period('M').unique()
+             print("Meses y años disponibles en los datos:", meses_anios)
+
+              # Verificar si los meses deseados están presentes
+             meses_deseados = ["2023-04", "2024-04", "2025-01", "2025-02", "2025-03", "2025-04"]
+             for mes in meses_deseados:
+                 if mes in meses_anios.astype(str):
+                     print(f"El mes {mes} está presente en los datos.")
+                 else:
+                     print(f"Advertencia: El mes {mes} no está presente en los datos.")
 
     def cargar_y_mostrar_datos(self):
         if self.cargar_datos():
@@ -231,10 +248,16 @@ class MainWindow(QMainWindow):
             # Generar DataFrames de placas y series repetidas
         self.placas_repetidas_df = self.encontrar_placas_repetidas()
         self.series_repetidas_df = self.encontrar_series_repetidas()
+
+        self.verificar_meses()
+        self.cargar_y_mostrar_datos()
+
+
        
 
         # Actualizar los totales
         self.actualizar_totales()
+
 
 
     def encontrar_placas_repetidas(self):
@@ -484,9 +507,13 @@ class MainWindow(QMainWindow):
         mes_seleccionado = self.mes_combo.currentText()
         colonia_seleccionada = self.colonia_combo.currentText()
         clasificacion_seleccionada = self.clasificacion_combo.currentText()
+        # Crear una copia del DataFrame original
         self.df = self.df_original.copy()
-        if año_seleccionado != "Todos":
+        # Validar el valor del año seleccionado
+        if año_seleccionado != "Todos" and año_seleccionado.isdigit():
             self.df = self.df[self.df['FECHA'].dt.year == int(año_seleccionado)]
+
+        # Validar el valor del mes seleccionado
         if mes_seleccionado != "Todos":
             meses_a_numero = {
                 "Enero": 1, "Febrero": 2, "Marzo": 3, "Abril": 4,
@@ -1366,6 +1393,3 @@ if __name__ == "__main__":
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())
-
-
-
